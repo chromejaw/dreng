@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drengr"
+version = "1.0.0"
+description = "High-performance prompt injection dataset generator engine"
+authors = [
+    {name = "drengr Team", email = "team@drengr.local"},
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "requests",
+    "typer",
+    "rich",
+    "sentence-transformers>=3.2.1",
+    "psutil>=7.2.2",
+]
+
+[project.scripts]
+drengr = "drengr.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["drengr*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]

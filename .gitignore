@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Distribution / packaging
+drengr.egg-info/
+build/
+dist/
+*.egg
+
+# Output and Data
+output/
+scratch/
+*.csv
+*.jsonl
+
+# Specific demo files
+drengr_demo.json
+workload_weights.json
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
