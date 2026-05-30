@@ -1,3 +1,3 @@
 # dreng
 
-it's cooking, wait for it
+It’s cooking. Wait for it; it’s almost there. 
