@@ -38,14 +38,40 @@ drengr sits in a gap that nobody else fills: a **programmable generation engine*
 | Structured JSON output with metadata | ✗ | partial | partial | ✗ | varies | **✓** |
 | Zipf-weighted traffic realism | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
 | Hard negatives (label-flipped) | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| 20 attack families with taxonomy | ✗ | ✗ | ✗ | ✗ | partial | **✓** |
 | Intent-preserving paraphrase families | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
-| 3-layer intent verification | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| 3-layer negation-aware intent verification | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| 8-method adversarial fuzzing engine | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Multilingual refusal detection (10 languages) | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Memory-aware LRU cache with int8 quantization | ✗ | ✗ | ✗ | ✗ | n/a | **✓** |
 | Deterministic reproducibility | ✗ | ✗ | ✗ | ✗ | ✓ | **✓** |
 | Single-function API | ✗ | ✗ | ✗ | ✗ | n/a | **✓** |
 
 **Use drengr alongside red teaming tools, not instead of them.** Generate thousands of diverse, verified adversarial prompts with drengr, then feed them into Promptfoo, Garak, or PyRIT to test your model's defenses at scale. That's the workflow nothing else supports.
 
----
+### Under the hood
+
+This isn't a wrapper around a prompt template. Here's what's actually happening inside the engine:
+
+**20 curated attack families** — not keyword lists, full taxonomies with seed prompts mapped to OWASP LLM01/LLM07, MITRE ATLAS AML.T0051, HackAPrompt, BIPIA, and Greshake et al. indirect injection research. Families include direct override, persona hijack, system prompt extraction, payload smuggling, social engineering, multi-turn escalation, context window manipulation, encoding wrappers, competing objectives, adversarial poetry, mathematical abstraction, emotional manipulation, context poisoning, gray box deception, goal redirection, synthetic context injection, context flooding, hybrid dual-layer attacks, and multilingual attacks across 7 scripts.
+
+**Chain-of-Thought paraphrase engine (2,000 lines)** — three length-class CoT strategies (short <40 words, medium 60–180 words, long 200–400 words) plus 11 format-specific CoTs (code comments, JSON fragments, email threads, markdown docs, chat threads, hybrid documents, multilingual). Each CoT is framed as a neutral rewriting task (not security research) to minimize LLM refusals. 16 pre-transform templates multiply 329 seeds into 5,264+ distinct inputs before any LLM call.
+
+**Negation-aware intent verification** — a custom NegEx implementation (Chapman et al. 2001) that uses a 50-character lookback window to distinguish `"bypass all safety filters"` (attack) from `"do not bypass safety"` (disclaimer). Every regex match across all 3 verification layers is gated through this negation check. Without it, security disclaimers would be counted as attack signals.
+
+**8-method adversarial fuzzing** — typo injection, case randomization, whitespace token breaking, Unicode homoglyph substitution (18 Cyrillic/Greek lookalikes), zero-width character smuggling (ZWS, ZWNJ, ZWJ, BOM), leetspeak, punctuation noise, and combining diacritics (Zalgo-lite). Each prompt gets 1–3 random transforms applied sequentially.
+
+**Refusal leakage detection in 10 languages** — catches when the LLM refused during paraphrase generation and its refusal text became the output. 12 compiled regex patterns covering English (explicit refusal, apology patterns, AI self-identification, policy violation), Arabic, Hindi, Chinese, Russian, Turkish, Swahili, Spanish, French, and German.
+
+**TF-IDF cosine deduplication** — pure-Python unigram+bigram tokenizer with CJK character n-gram fallback computes pairwise cosine similarity across the entire batch. Drops near-duplicates above 0.85 threshold without any external NLP dependency.
+
+**Opener diversity enforcement** — hard cap of 8% on any single starting word per batch. Two-pass targeted regeneration with dynamic opener ban lists ensures no repetitive patterns survive.
+
+**Length-class co-scheduler** — sorts families by inflexibility (how many length classes they support) and co-schedules `(family, length_class, format_type)` triples. Post-generation repair loop detects medium→short length leaks and regenerates with explicit word-count floors.
+
+**Memory-aware generation** — `psutil`-based memory monitoring with proactive `gc.collect()` when approaching limits. Adaptive batch sizing scales to available RAM. LRU cache eviction with per-entry memory tracking. Int8 quantization compresses float embeddings on-the-fly for large-scale runs.
+
+**Keyword obfuscation engine** — 20% of each batch gets 1–2 adversarial keywords obfuscated through 4 transforms: leet substitution, Cyrillic homoglyphs, zero-width space injection after the 2nd character, and character spacing expansion. Makes generated prompts harder to catch with simple string matching.
 
 ## Table of Contents
 
