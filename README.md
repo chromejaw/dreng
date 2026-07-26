@@ -51,27 +51,20 @@ drengr sits in a gap that nobody else fills: a **programmable generation engine*
 
 ### Under the hood
 
-This isn't a wrapper around a prompt template. Here's what's actually happening inside the engine:
+This isn't a wrapper around a prompt template.
 
-**20 curated attack families** — not keyword lists, full taxonomies with seed prompts mapped to OWASP LLM01/LLM07, MITRE ATLAS AML.T0051, HackAPrompt, BIPIA, and Greshake et al. indirect injection research. Families include direct override, persona hijack, system prompt extraction, payload smuggling, social engineering, multi-turn escalation, context window manipulation, encoding wrappers, competing objectives, adversarial poetry, mathematical abstraction, emotional manipulation, context poisoning, gray box deception, goal redirection, synthetic context injection, context flooding, hybrid dual-layer attacks, and multilingual attacks across 7 scripts.
-
-**Chain-of-Thought paraphrase engine (2,000 lines)** — three length-class CoT strategies (short <40 words, medium 60–180 words, long 200–400 words) plus 11 format-specific CoTs (code comments, JSON fragments, email threads, markdown docs, chat threads, hybrid documents, multilingual). Each CoT is framed as a neutral rewriting task (not security research) to minimize LLM refusals. 16 pre-transform templates multiply 329 seeds into 5,264+ distinct inputs before any LLM call.
-
-**Negation-aware intent verification** — a custom NegEx implementation (Chapman et al. 2001) that uses a 50-character lookback window to distinguish `"bypass all safety filters"` (attack) from `"do not bypass safety"` (disclaimer). Every regex match across all 3 verification layers is gated through this negation check. Without it, security disclaimers would be counted as attack signals.
-
-**8-method adversarial fuzzing** — typo injection, case randomization, whitespace token breaking, Unicode homoglyph substitution (18 Cyrillic/Greek lookalikes), zero-width character smuggling (ZWS, ZWNJ, ZWJ, BOM), leetspeak, punctuation noise, and combining diacritics (Zalgo-lite). Each prompt gets 1–3 random transforms applied sequentially.
-
-**Refusal leakage detection in 10 languages** — catches when the LLM refused during paraphrase generation and its refusal text became the output. 12 compiled regex patterns covering English (explicit refusal, apology patterns, AI self-identification, policy violation), Arabic, Hindi, Chinese, Russian, Turkish, Swahili, Spanish, French, and German.
-
-**TF-IDF cosine deduplication** — pure-Python unigram+bigram tokenizer with CJK character n-gram fallback computes pairwise cosine similarity across the entire batch. Drops near-duplicates above 0.85 threshold without any external NLP dependency.
-
-**Opener diversity enforcement** — hard cap of 8% on any single starting word per batch. Two-pass targeted regeneration with dynamic opener ban lists ensures no repetitive patterns survive.
-
-**Length-class co-scheduler** — sorts families by inflexibility (how many length classes they support) and co-schedules `(family, length_class, format_type)` triples. Post-generation repair loop detects medium→short length leaks and regenerates with explicit word-count floors.
-
-**Memory-aware generation** — `psutil`-based memory monitoring with proactive `gc.collect()` when approaching limits. Adaptive batch sizing scales to available RAM. LRU cache eviction with per-entry memory tracking. Int8 quantization compresses float embeddings on-the-fly for large-scale runs.
-
-**Keyword obfuscation engine** — 20% of each batch gets 1–2 adversarial keywords obfuscated through 4 transforms: leet substitution, Cyrillic homoglyphs, zero-width space injection after the 2nd character, and character spacing expansion. Makes generated prompts harder to catch with simple string matching.
+| Feature | What it does |
+|---|---|
+| **20 attack families** | Full taxonomy mapped to OWASP LLM01/07, MITRE ATLAS, HackAPrompt, BIPIA — from direct override to adversarial poetry to multilingual attacks across 7 scripts |
+| **CoT paraphrase engine** | 2,000 lines. 3 length classes × 11 format-specific CoTs (code comments, JSON, emails, chat threads, etc.). 16 pre-transforms multiply 329 seeds → 5,264+ distinct inputs before any LLM call |
+| **NegEx negation detection** | 50-char lookback window distinguishes `"bypass safety"` (attack) from `"do not bypass safety"` (disclaimer). Gates every regex match across all 3 verification layers |
+| **8-method adversarial fuzzing** | Homoglyphs (18 Cyrillic/Greek lookalikes), zero-width smuggling, leetspeak, Zalgo diacritics, typos, case randomization, whitespace breaking, punctuation noise. 1–3 transforms per prompt |
+| **10-language refusal detection** | 12 compiled regex patterns catch LLM refusal leakage in EN, AR, HI, ZH, RU, TR, SW, ES, FR, DE |
+| **TF-IDF deduplication** | Pure-Python cosine similarity (unigram+bigram, CJK n-gram fallback). Drops near-dupes above 0.85. Zero external deps |
+| **Opener diversity cap** | Max 8% of batch can start with the same word. 2-pass regeneration with dynamic ban lists |
+| **Length co-scheduler** | Sorts families by inflexibility, co-schedules `(family, length, format)` triples. Auto-repairs medium→short leaks |
+| **Memory-aware engine** | `psutil` monitoring, adaptive batch sizing, LRU eviction with per-entry tracking, int8 embedding quantization |
+| **Keyword obfuscation** | 20% of batch gets keywords obfuscated via leet, Cyrillic homoglyphs, zero-width injection, character spacing |
 
 ## Table of Contents
 
