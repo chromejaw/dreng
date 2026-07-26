@@ -1,4 +1,4 @@
-<![CDATA[# drengr
+# drengr
 
 **High-performance prompt injection dataset generator for training and evaluating LLM security classifiers.**
 
@@ -460,4 +460,3 @@ drengr's seed bank and generation strategies are grounded in:
 ## License
 
 [GNU General Public License v3.0](LICENSE)
-]]>
