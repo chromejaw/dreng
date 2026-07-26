@@ -1,6 +1,6 @@
 # drengr
 
-**High-performance prompt injection dataset generator for training and evaluating LLM security classifiers.**
+**High-performance adversarial prompt generation engine for LLM red teaming and security research.**
 
 drengr takes a single number — how many prompts you want — and generates a research-grade adversarial dataset with realistic traffic patterns, intent-preserving paraphrases, and hard negatives. One function call. No boilerplate.
 
@@ -14,15 +14,36 @@ drengr.generate(5000)
 
 ## Why drengr?
 
-Training a prompt injection classifier requires more than a list of "ignore previous instructions" strings. You need:
+Red teaming an LLM with the same 50 jailbreak strings from GitHub is not security testing — it's a checkbox. Real adversarial evaluation needs:
 
 - **Diverse attack families** — exact repeats, semantic paraphrases, near-duplicate fuzzing, temporal anchors
-- **Realistic traffic distributions** — Zipf-weighted repeat frequencies, not uniform sampling
-- **Hard negatives** — prompts that _look_ malicious (formal security tone) but are actually benign, so your model learns the real decision boundary
+- **Realistic traffic distributions** — Zipf-weighted repeat frequencies that mirror real-world attack patterns, not uniform sampling
+- **Hard negatives** — prompts that _look_ malicious (formal security tone, security jargon) but carry benign payloads, exposing false-positive blindspots
 - **Intent verification** — a 3-layer quality gate that catches refusal leakage, payload drift, and diluted attack density
-- **Reproducibility** — deterministic seeding so every dataset is byte-for-byte reproducible
+- **Reproducibility** — deterministic seeding so every dataset is byte-for-byte reproducible across runs
 
 drengr handles all of this out of the box.
+
+---
+
+## Nothing else does this
+
+The existing LLM security tools — Promptfoo, Garak, PyRIT, DeepTeam — are **live-model scanners**. They probe a running model and report pass/fail. They don't _generate_ datasets. On the other side, static datasets like HarmBench, AdvBench, and JailbreakBench are fixed collections — you get what's there, and that's it.
+
+drengr sits in a gap that nobody else fills: a **programmable generation engine** that produces structured, high-diversity adversarial prompts at any scale.
+
+| Capability | Promptfoo | Garak | PyRIT | DeepTeam | Static datasets | **drengr** |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Generates new prompts at scale | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Structured JSON output with metadata | ✗ | partial | partial | ✗ | varies | **✓** |
+| Zipf-weighted traffic realism | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Hard negatives (label-flipped) | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Intent-preserving paraphrase families | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| 3-layer intent verification | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Deterministic reproducibility | ✗ | ✗ | ✗ | ✗ | ✓ | **✓** |
+| Single-function API | ✗ | ✗ | ✗ | ✗ | n/a | **✓** |
+
+**Use drengr alongside red teaming tools, not instead of them.** Generate thousands of diverse, verified adversarial prompts with drengr, then feed them into Promptfoo, Garak, or PyRIT to test your model's defenses at scale. That's the workflow nothing else supports.
 
 ---
 
@@ -34,6 +55,7 @@ drengr handles all of this out of the box.
   - [Python API](#python-api)
   - [CLI](#cli)
 - [Generation Profiles](#generation-profiles)
+- [Nothing else does this](#nothing-else-does-this)
 - [Architecture](#architecture)
 - [Output Format](#output-format)
 - [How It Works](#how-it-works)
@@ -199,7 +221,7 @@ Profiles control the quality vs. speed tradeoff. Each profile adjusts category d
 
 | Profile | Description | Use Case |
 |---------|-------------|----------|
-| **`sota`** | State-of-the-art. Industry-standard distributions across 10 domains, balanced difficulty, full paraphrase diversity. | Production classifier training |
+| **`sota`** | State-of-the-art. Industry-standard distributions across 10 domains, balanced difficulty, full paraphrase diversity. | Production red teaming, security research |
 | **`fast`** | Speed-optimized. Fewer domains, shorter prompts, lower paraphrase counts. | Quick iteration, CI/CD pipelines |
 | **`cheap`** | Cost-optimized. Minimizes API calls, steeper Zipf curve (more repeats). | Budget-constrained environments |
 | **`dev`** | Minimal resources. Short prompts, low difficulty, small paraphrase families. | Local development and testing |
@@ -255,7 +277,7 @@ drengr/
 
 ## Output Format
 
-drengr outputs a JSON file. Each prompt is a rich object with metadata for downstream training.
+drengr outputs a JSON file. Each prompt is a rich object with full metadata — ready to feed into red teaming pipelines, security evaluations, or classifier training.
 
 ```json
 {
@@ -347,7 +369,7 @@ Falls back to fast template-based paraphrasing when no LLM is available.
 
 ### 4. Hard negatives
 
-~17% of generated prompts are intentionally flipped to `label=0`. These use security-framed, formal-styled language but carry benign payloads. This forces the classifier to learn the actual decision boundary instead of mapping "sounds serious" → malicious.
+~17% of generated prompts are intentionally flipped to `label=0`. These use security-framed, formal-styled language but carry benign payloads. This exposes false-positive blindspots — where a model flags anything that "sounds serious" as malicious instead of evaluating actual intent.
 
 ### 5. Intent verification
 
